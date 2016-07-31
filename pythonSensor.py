@@ -4,6 +4,8 @@ import subprocess
 import threading
 import picamera
 import urllib
+import logging
+import logging.handlers
 from threading import Timer
 from array import *
 from time import sleep
@@ -11,16 +13,23 @@ usleep = lambda x: sleep(x/2000000.0)
 
 temperature = -1.0
 humid = -1.0
+my_logger = logging.getLogger('MyLogger')
+LOG_FILENAME = '/var/log/sensor_working.log'
+my_logger.setLevel(logging.DEBUG)
+handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=1024000, backupCount=5)
+my_logger.addHandler(handler)
 
 def runSyncTimer():
-    print(threading.currentThread())
+    global my_logger    
+    my_logger.debug(threading.currentThread())
     if (humid > 0) and (temperature > 0):
         urllib.urlopen("http://kjkj.me:8000/sensorLoggingApi/submit/?key=KgDWaHd3Vy8&humid={0}&temperature={1}".format(humid, temperature))
     Timer(5 * 60, runSyncTimer, ()).start()
 
 def readDHT11():
-    global humid, temperature
-    p = subprocess.Popen(['./tempSensor.out'], stdout=subprocess.PIPE, 
+    global humid, temperature, mylogger
+    #tempSensor.out should be in /usr/bin
+    p = subprocess.Popen(['tempSensor.out'], stdout=subprocess.PIPE, 
                                     stderr=subprocess.PIPE)
     out, err = p.communicate()
     # Data format : RESULT, 33.0,27.0
@@ -29,21 +38,22 @@ def readDHT11():
         humid = float(dataArray[1])
         temperature = float(dataArray[2])
     
-    print(out)
-    print("{0}, {1}".format(humid, temperature))
-    print(threading.currentThread())
+    my_logger.debug(out)
+    my_logger.debug("{0}, {1}".format(humid, temperature))
+    my_logger.debug(threading.currentThread())
 
 
 def motion_callback(channel):
-    print("motion detect = {0}".format(GPIO.input(23)))
-    print(threading.currentThread())
+    global my_logger
+    my_logger.debug("motion detect = {0}".format(GPIO.input(23)))
+    my_logger.debug(threading.currentThread())
     camera = picamera.PiCamera()
     camera.rotation = -90
     camera.start_recording('video.h264')
     sleep(15)
     camera.stop_recording()
     
-    print("Recording end")
+    my_logger.debug("Recording end")
 
 
 def registerMotionCallback():
