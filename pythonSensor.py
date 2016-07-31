@@ -48,7 +48,8 @@ def motion_callback(channel):
     my_logger.debug("motion detect = {0}".format(GPIO.input(23)))
     my_logger.debug(threading.currentThread())
     camera = picamera.PiCamera()
-    camera.rotation = -90
+    camera.rotation = 90
+    camera.capture('image.jpg')
     camera.start_recording('video.h264')
     sleep(15)
     camera.stop_recording()
