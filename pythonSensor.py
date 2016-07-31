@@ -2,12 +2,20 @@ import RPi.GPIO as GPIO
 import subprocess
 import threading
 import picamera
+import urllib
+from threading import Timer
 from array import *
 from time import sleep
 usleep = lambda x: sleep(x/2000000.0)
 
 temperature = -1.0
 humid = -1.0
+
+def runSyncTimer():
+    print(threading.currentThread())
+    if (humid > 0) and (temperature > 0):
+        urllib.urlopen("http://kjkj.me:8000/sensorLoggingApi/submit/?key=KgDWaHd3Vy8&humid={0}&temperature={1}".format(humid, temperature))
+    Timer(5 * 60, runSyncTimer, ()).start()
 
 def readDHT11():
     global humid, temperature
@@ -44,6 +52,7 @@ def registerMotionCallback():
     GPIO.add_event_callback(MOTION, motion_callback)
 
 def main():
+    runSyncTimer()
     GPIO.setmode(GPIO.BCM)
     registerMotionCallback()
     while True:
